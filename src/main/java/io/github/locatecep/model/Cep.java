@@ -1,4 +1,4 @@
-package model;
+package io.github.locatecep.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,10 +10,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Cep {
-	
-	private String uf;
-	private String cidade;
-	private String numeracao;
-	
+
+    private String uf;
+    private String cidade;
+    private String numeracao;
+
 
 }
