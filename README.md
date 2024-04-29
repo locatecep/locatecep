@@ -1,16 +1,16 @@
 # LocateCEP: Localizador de UF/Cidade via Cep
 
-O LocalizaCEP é um componente criado para simplificar o processo de obtenção de informações sobre o estado brasileiro (
+O LocateCEP é um componente criado para simplificar o processo de obtenção de informações sobre o estado brasileiro (
 UF) e a cidade associados a um CEP específico. Ele é um sistema que utiliza um banco de dados para realizar consultas e
 fornecer essas informações de forma rápida e eficiente.
 
-O desenvolvimento do LocalizaCEP surgiu da necessidade de facilitar e agilizar a recuperação de informações geográficas
+O desenvolvimento do LocateCEP surgiu da necessidade de facilitar e agilizar a recuperação de informações geográficas
 com base em um CEP. Muitas vezes, ao lidar com sistemas de logística, entrega de mercadorias ou simplesmente
 preenchimento de formulários, é essencial ter acesso rápido e preciso às informações de UF e cidade associadas a um
-determinado CEP. O LocalizaCEP visa resolver esse problema, fornecendo uma maneira fácil e confiável de obter esses
+determinado CEP. O LocateCEP visa resolver esse problema, fornecendo uma maneira fácil e confiável de obter esses
 dados.
 
-Sem um sistema dedicado como o LocalizaCEP, obter informações de estado e cidade a partir de um CEP pode ser um processo
+Sem um sistema dedicado como o LocateaCEP, obter informações de estado e cidade a partir de um CEP pode ser um processo
 complexo e demorado, envolvendo consultas manuais em bancos de dados ou APIs externas. Em muitos cenários, especialmente
 em sistemas em tempo real ou aplicativos que exigem respostas rápidas, é crucial ter um mecanismo que forneça essas
 informações de forma rápida e eficiente.
@@ -24,42 +24,64 @@ desejado como parâmetro. Isso retornará uma string formatada contendo as infor
 
 Exemplos mais práticos de como o sistema poderia ser utilizado.
 
-1. - Um cliente insere seu endereço de entrega em um aplicativo de entrega, neste caso `cep: 12345-678`.
+1. - Um cliente insere seu CEP em um aplicativo de entrega, por exemplo, `cep: 12345-678`.
 
-2. - O aplicativo utiliza o componente de Geolocalização para converter o CEP em informações de localização.
+2. - O aplicativo valida o CEP fornecido.
 
-3. - O sistema identifica a cidade e o estado correspondentes ao CEP.
+3. - Se o CEP for válido, o sistema utiliza um serviço para buscar informações relacionadas ao CEP, como estado e cidade.
 
 4. - Com base nessas informações, o aplicativo atribui a entrega a um centro de distribuição mais próximo.
 
-5. - O pedido é entregue com maior eficiência, reduzindo os tempos de espera e os custos de envio.
+5. - O pedido é então encaminhado para entrega, otimizando o processo e reduzindo tempos de espera e custos de envio.
 
 Exemplo de Implementação:
 
 ```java
 public class Main {
-    public static void main(String[] args) {
-        Scanner scan = new Scanner(System.in);
+   public static void main(String[] args) {
+      Scanner scan = new Scanner(System.in);
 
-        // Solicitando ao usuário que informe o CEP para busca
-        System.out.println("Informe o CEP para busca: ");
-        String numeracao = scan.nextLine();
+      // Solicita ao usuário que informe o CEP
+      System.out.println("Informe o CEP:");
+      String cepDigit = scan.nextLine();
 
-        // Chamando o método console da classe ConsoleService
-        String response = ConsoleService.console(numeracao);
+      // Verifica se o CEP fornecido possui o formato correto (8 dígitos)
+      if (cepDigit.length() != 8) {
+         System.out.println("CEP inválido");
+         System.exit(1); // Encerra o programa com código de erro
+      }
 
-        // Imprimindo a resposta formatada
-        System.out.println(response);
+      try {
+         // Instancia o serviço para buscar informações do CEP
+         CepService cepService = new CepService();
 
-        scan.close();
+         // Busca informações do CEP no serviço
+         Cep cep = cepService.buscar(cepDigit);
 
-    }
+         // Se informações do CEP forem encontradas, exibe-as
+         if (cep != null) {
+            System.out.println("CEP: " + cep.getNumeracao());
+            System.out.println("UF: " + cep.getUf());
+            System.out.println("Cidade: " + cep.getCidade());
+         } else {
+            // Se não forem encontradas informações, exibe mensagem adequada
+            System.out.println("Não foram encontrados registros para o CEP informado.");
+         }
+      } catch (Exception e) {
+         // Em caso de erro durante a busca do CEP, exibe mensagem de erro
+         System.err.println("Erro ao buscar informações do CEP: " + e.getMessage());
+         e.printStackTrace(); // Exibe detalhes do erro
+      } finally {
+         scan.close(); // Fecha o scanner para evitar vazamento de recursos
+      }
+   }
 }
 ```
 
 Saida:
 
 ````makfile
+Informe o CEP:
 CEP: 12345-678
 UF: SP
 Cidade: São Paulo
@@ -231,38 +253,6 @@ public class CepRepository {
         }
         // Se o CEP não foi encontrado, retorna null
         return null;
-    }
-
-}
-```
-
-`ConsoleService`: Esta classe oferece métodos para interação com o console, incluindo a exibição das informações de CEP.
-O método `console` recebe uma string representando o número de um CEP como parâmetro, chama o método `buscar` da
-classe `CepService` para obter as informações de UF e cidade associadas a esse CEP e formata essas informações para
-exibição no console.
-
-```java
-public class ConsoleService {
-
-    public static String console(String numeracao) {
-
-        // Instancia um objeto CepService para buscar as informações do CEP
-        CepService service = new CepService();
-
-        try {
-            // Chama o método buscar do CepService para obter as informações do CEP
-            Cep cep = service.buscar(numeracao);
-
-            // Formata as informações do CEP para exibição no console
-            return "CEP: " + cep.getNumeracao() + "\nUF: " + cep.getUf() + "\nCidade: " + cep.getCidade();
-
-        } catch (NotFoundException e) {
-            // Se o CEP não foi encontrado, lança uma exceção
-            throw new NotFoundException(e.getMessage());
-        } catch (DatabaseConnectionError e) {
-            // Em caso de erro de conexão com o banco de dados, lança uma exceção
-            throw new DatabaseConnectionError(e.getMessage());
-        }
     }
 
 }
