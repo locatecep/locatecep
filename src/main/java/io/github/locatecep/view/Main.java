@@ -3,19 +3,24 @@ package io.github.locatecep.view;
 import io.github.locatecep.model.Cep;
 import io.github.locatecep.service.CepService;
 
+import java.util.Scanner;
+
 public class Main {
 
     public static void main(String[] args) {
-        if (args.length < 1) {
-            System.out.println("Uso: java -jar locatecep.jar potes.Main <NUMERO DO CEP>");
+        Scanner scan = new Scanner(System.in);
+
+        System.out.println("Informe o CEP");
+        String cepDigit = scan.nextLine();
+
+        if (cepDigit.length() > 8) {
+            System.out.println("CEP inválido");
             System.exit(1);
         }
 
-        String numeroCep = args[0];
-
         try {
             CepService cepService = new CepService();
-            Cep cep = cepService.buscar(numeroCep);
+            Cep cep = cepService.buscar(cepDigit);
 
             if (cep != null) {
                 System.out.println("CEP: " + cep.getNumeracao());
