@@ -341,5 +341,5 @@ este projeto em seus próprios projetos educacionais ou de aprendizado, não hes
 
 ## Licença:
 
-Este projeto é de domínio público, o que significa que você pode usar, modificar e distribuir o código como desejar, sem
-restrições.
+
+Este projeto é licenciado sob a [MIT License](LICENSE).
