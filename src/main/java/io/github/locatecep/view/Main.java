@@ -1,37 +1,24 @@
 package io.github.locatecep.view;
 
 import io.github.locatecep.model.Cep;
+import io.github.locatecep.repository.CepRepository;
+import io.github.locatecep.repository.DatabaseCepRepository;
 import io.github.locatecep.service.CepService;
-
-import java.util.Scanner;
 
 public class Main {
 
     public static void main(String[] args) {
-        Scanner scan = new Scanner(System.in);
+        CepView view = new CepView();
+        String numeroCep = view.getCepInput();
 
-        System.out.println("Informe o CEP");
-        String cepDigit = scan.nextLine();
-
-        if (cepDigit.length() > 8) {
-            System.out.println("CEP inválido");
-            System.exit(1);
-        }
+        CepRepository repository = new DatabaseCepRepository();
+        CepService cepService = new CepService(repository);
 
         try {
-            CepService cepService = new CepService();
-            Cep cep = cepService.buscar(cepDigit);
-
-            if (cep != null) {
-                System.out.println("CEP: " + cep.getNumeracao());
-                System.out.println("UF: " + cep.getUf());
-                System.out.println("Cidade: " + cep.getCidade());
-            } else {
-                System.out.println("Não foram encontrados registros para o CEP informado.");
-            }
+            Cep cep = cepService.buscar(numeroCep);
+            view.displayCep(cep);
         } catch (Exception e) {
-            System.err.println("Erro ao buscar informações do CEP: " + e.getMessage());
-            e.printStackTrace();
+            view.displayError(e.getMessage());
         }
     }
 }
