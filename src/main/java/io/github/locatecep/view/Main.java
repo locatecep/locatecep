@@ -8,9 +8,14 @@ import io.github.locatecep.service.CepService;
 public class Main {
 
     public static void main(String[] args) {
-        CepView view = new CepView();
-        String numeroCep = view.getCepInput();
+        if (args.length != 1) {
+            System.err.println("Uso: java -jar locatecep.jar <NUMERO DO CEP>");
+            System.exit(1);
+        }
 
+        String numeroCep = args[0];
+
+        CepView view = new CepView();
         CepRepository repository = new DatabaseCepRepository();
         CepService cepService = new CepService(repository);
 
