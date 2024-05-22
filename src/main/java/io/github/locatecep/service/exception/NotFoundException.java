@@ -1,11 +1,7 @@
 package io.github.locatecep.service.exception;
 
-public class NotFoundException extends RuntimeException{
-
-    private static final long serialVersionUID = 1L;
-
-    public NotFoundException(String msg) {
-        super(msg);
+public class NotFoundException extends CepServiceException {
+    public NotFoundException(String message) {
+        super(message);
     }
-
 }
