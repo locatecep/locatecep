@@ -1,0 +1,6 @@
+io.github.locatecep.config
+io.github.locatecep.model
+io.github.locatecep.repository
+io.github.locatecep.service
+io.github.locatecep.service.exception
+io.github.locatecep.view
