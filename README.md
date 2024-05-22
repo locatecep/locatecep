@@ -17,8 +17,8 @@ informações de forma rápida e eficiente.
 
 ## Uso:
 
-Para utilizar o sistema, é necessário invocar o método console da classe ConsoleService, passando o número do CEP
-desejado como parâmetro. Isso retornará uma string formatada contendo as informações do CEP.
+Para utilizar o sistema, você precisa executar o arquivo JAR gerado a partir do código fonte. Passe o número do CEP desejado como argumento na linha de comando.
+Exemplo:
 
 ### Exemplo: Aplicativo de Entregas
 
@@ -36,44 +36,56 @@ Exemplos mais práticos de como o sistema poderia ser utilizado.
 
 Exemplo de Implementação:
 
+```bash
+java -jar locatecep.jar 12345678 
+```
+
+
+
 ```java
 public class Main {
    public static void main(String[] args) {
-      // Cria uma instância da classe CepView para lidar com a interface do usuário.
+      // Verifica se exatamente um argumento (o CEP) foi fornecido na linha de comando
+      if (args.length != 1) {
+         // Exibe uma mensagem indicando o uso correto do programa
+         System.err.println("Uso: java -jar locatecep.jar <NUMERO DO CEP>");
+         // Encerra o programa com um código (1)
+         System.exit(1);
+      }
+
+      // Obtém o número do CEP do primeiro argumento
+      String numeroCep = args[0];
+
+      // Cria uma instância da classe CepView para interação com o usuário
       CepView view = new CepView();
 
-      // Obtém o CEP digitado pelo usuário através da view.
-      String numeroCep = view.getCepInput();
-
-      // Cria uma instância do repositório de CEPs, utilizando a implementação que busca no banco de dados.
+      // Cria uma instância do repositório que busca dados no banco de dados
       CepRepository repository = new DatabaseCepRepository();
 
-      // Cria uma instância do serviço de CEP, injetando o repositório para realizar a busca.
+      // Cria uma instância do serviço de CEP, passando o repositório como dependência
       CepService cepService = new CepService(repository);
 
       try {
-         // Utiliza o serviço para buscar o CEP informado pelo usuário.
+         // Tenta buscar as informações do CEP usando o serviço
          Cep cep = cepService.buscar(numeroCep);
-
-         // Exibe as informações do CEP através da view.
+         // Exibe as informações do CEP encontradas
          view.displayCep(cep);
       } catch (Exception e) {
-         // Em caso de erro durante a busca, exibe a mensagem de erro através da view.
+         // Em caso de qualquer erro (CEP inválido, não encontrado, erro de banco de dados), 
+         // exibe a mensagem de erro correspondente
          view.displayError(e.getMessage());
       }
    }
 }
-
 ```
 
-Saida:
+**Saída:**
 
-````makfile
-Informe o CEP:
-CEP: 12345-678
-UF: SP
-Cidade: São Paulo
-````
+``` makfile
+CEP: 12345678
+UF: BA
+Cidade: Salvador
+```
 
 ## Desenvolvimento do Projeto:
 
@@ -171,9 +183,7 @@ importante. Isso exigiu a otimização das consultas e o uso de índices para me
 
 ## Trechos de código relevantes:
 
-`CepService`:  Esta classe fornece métodos para buscar informações de CEP. O método `buscar` recebe uma string
-representando o número de um CEP como parâmetro e retorna um objeto `Cep` contendo as informações de UF e cidade
-associadas a esse CEP.
+`CepService`:  Esta classe é responsável pela lógica de negócio da busca de CEP. Ela valida o CEP fornecido e utiliza o `CepRepository` para buscar as informações no banco de dados.
 
 ```java
 public class CepService {
@@ -185,44 +195,73 @@ public class CepService {
    }
    
    public Cep buscar(String numeracao) {
-      // Validação do CEP (deve ter no máximo 8 dígitos).
+      // Verifica se o CEP tem mais de 8 dígitos (considerando que pode conter hífen)
       if (numeracao.length() > 8) {
          throw new CepServiceException("CEP inválido.");
       }
 
-      // Busca o CEP no repositório.
+      // Realiza a busca do CEP no repositório
       Cep cep = cepRepository.buscarCep(numeracao);
 
-      // Se o CEP não for encontrado, lança uma exceção.
+      // Verifica se o CEP foi encontrado
       if (cep == null) {
          throw new NotFoundException("Não foram encontrados registros para o CEP informado.");
       }
 
-      // Retorna o objeto Cep com as informações encontradas.
+      // Retorna o objeto Cep com as informações encontradas
       return cep;
    }
 }
+
 ```
 
-`CepRepository`: é uma interface que define o contrato para a busca de CEPs. Ela não contém mais a lógica de acesso ao banco de dados, apenas declara o método `buscarCep(String numeracao)`, que deve ser implementado por classes concretas.
+`DatabaseCepRepository`: Esta classe implementa a interface `CepRepository` e contém a lógica para buscar informações de CEP no banco de dados PostgreSQL.
 
 ```java
-/**
- * Interface que define o contrato para um repositório de CEP.
- * Classes que implementam esta interface devem fornecer a lógica de busca de CEPs.
- */
-public interface CepRepository {
+public class DatabaseCepRepository implements CepRepository {
+   public Cep buscarCep(String numeracao) {
+      // Obtém uma conexão com o banco de dados
+      Connection conn = Database.getConnection();
 
-   /**
-    * Busca as informações de um CEP.
-    *
-    * @param numeracao O número do CEP a ser buscado.
-    * @return Um objeto Cep contendo as informações encontradas, ou null se não encontrado.
-    */
-   Cep buscarCep(String numeracao);
+      try {
+         // Prepara a consulta SQL para buscar o CEP na tabela faixas_cep, verificando se o CEP está dentro do intervalo de uma faixa
+         String sql = "SELECT uf, cidade FROM faixas_cep WHERE ?::bigint BETWEEN CAST(cep_inicio AS bigint) AND CAST(cep_fim AS bigint) OFFSET 1 LIMIT 1";
+         PreparedStatement st = conn.prepareStatement(sql);
+
+         // Define o parâmetro da consulta (o CEP)
+         st.setString(1, numeracao);
+
+         // Executa a consulta e obtém os resultados
+         ResultSet rs = st.executeQuery();
+
+         // Se encontrar um resultado
+         if (rs.next()) {
+            // Cria um novo objeto Cep e preenche com os dados do resultado
+            Cep cep = new Cep();
+            cep.setUf(rs.getString("uf")); // Obtém a UF do resultado
+            cep.setCidade(rs.getString("cidade")); // Obtém a cidade do resultado
+            cep.setNumeracao(numeracao); // Define a numeração do CEP no objeto
+            return cep; // Retorna o objeto Cep preenchido
+         }
+      } catch (SQLException e) {
+         // Lança uma exceção em caso de erro na consulta SQL
+         throw new DatabaseConnectionError(e.getMessage());
+      } finally {
+         // Garante que a conexão seja fechada, mesmo se ocorrer um erro
+         Database.closeConnection(conn);
+      }
+
+      // Retorna null se o CEP não for encontrado
+      return null;
+   }
 }
-
 ```
+**Outras Classes:**
+
+* `Cep`: Uma classe simples para representar um objeto CEP com seus atributos (UF, cidade, numeração).
+* `CepView`: Responsável pela interação com o usuário, exibindo mensagens e resultados.
+* `Database`: Classe utilitária para gerenciar a conexão com o banco de dados PostgreSQL.
+* Classes de Exceção: `CepServiceException`, `NotFoundException`, `DatabaseConnectionError` para lidar com diferentes tipos de erros que podem ocorrer durante a execução do programa.
 
 ## Instruções de Instalação:
 
@@ -301,7 +340,7 @@ Seguindo esses passos, você deverá ter o sistema LocateCEP configurado e em ex
 
 ## Contribuição:
 
-O projeto é destinado apenas para fins de aprendizado e não será aberto para contribuições. No entanto, agradecemos seu
+O projeto é destinado apenas para fins de aprendizado. No entanto, agradecemos seu
 feedback e perguntas! Se você tiver alguma dúvida, sugestão de melhoria ou quiser compartilhar sua experiência usando
 este projeto em seus próprios projetos educacionais ou de aprendizado, não hesite em entrar em contato.
 
