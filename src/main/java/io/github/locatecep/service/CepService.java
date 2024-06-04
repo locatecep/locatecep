@@ -14,11 +14,14 @@ public class CepService {
     }
 
     public Cep buscar(String numeracao) {
-        if (numeracao.length() > 8) {
+        
+        String numeracao_tratada = numeracao.replaceAll("[.-]", "");
+        
+        if (numeracao_tratada.length() > 8) {
             throw new CepServiceException("CEP inválido.");
         }
 
-        Cep cep = cepRepository.buscarCep(numeracao);
+        Cep cep = cepRepository.buscarCep(numeracao_tratada);
 
         if (cep == null) {
             throw new NotFoundException("Não foram encontrados registros para o CEP informado.");
